@@ -1,0 +1,12 @@
+educms-backend/node_modules/
+educms-backend/.env
+educms-backend/uploads/
+educms-backend/logs/
+
+educms-frontend/node_modules/
+educms-frontend/.env
+
+.DS_Store
+coverage/
+dist/
+build/
