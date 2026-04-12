@@ -7,11 +7,20 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const setAuthToken = (token) => {
+    if (token) {
+      api.defaults.headers.common.Authorization = `Bearer ${token}`;
+    } else {
+      delete api.defaults.headers.common.Authorization;
+    }
+  };
+
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
     const { token, user } = response.data;
 
     localStorage.setItem('token', token);
+    setAuthToken(token);
     setUser(user);
 
     return response.data;
@@ -19,6 +28,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    setAuthToken(null);
     setUser(null);
   };
 
@@ -28,6 +38,7 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.user);
     } catch (error) {
       localStorage.removeItem('token');
+      setAuthToken(null);
       setUser(null);
     } finally {
       setLoading(false);
@@ -38,6 +49,7 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
 
     if (token) {
+      setAuthToken(token);
       fetchMe();
     } else {
       setLoading(false);

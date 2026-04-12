@@ -61,6 +61,19 @@ const Tags = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm('Are you sure you want to delete this tag?');
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/tags/${id}`);
+      setTags((prev) => prev.filter((tag) => tag.tag_id !== id));
+    } catch (err) {
+      console.error('Delete tag error:', err);
+      setError('Failed to delete tag');
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" fontWeight={800} gutterBottom>
@@ -141,6 +154,7 @@ const Tags = () => {
                   <TableCell><strong>Name</strong></TableCell>
                   <TableCell><strong>Slug</strong></TableCell>
                   <TableCell><strong>Description</strong></TableCell>
+                  <TableCell><strong>Actions</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -151,11 +165,21 @@ const Tags = () => {
                       <TableCell>{tag.name}</TableCell>
                       <TableCell>{tag.slug}</TableCell>
                       <TableCell>{tag.description}</TableCell>
+                      <TableCell>
+                        <Button
+                          color="error"
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleDelete(tag.tag_id)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4}>No tags found.</TableCell>
+                    <TableCell colSpan={5}>No tags found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

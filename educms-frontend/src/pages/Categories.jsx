@@ -30,10 +30,8 @@ const Categories = () => {
   const fetchCategories = async () => {
     try {
       const response = await api.get('/categories');
-      console.log('GET /categories response:', response.data);
       setCategories(response.data.categories || []);
     } catch (err) {
-      console.error('Fetch categories error:', err);
       setError('Failed to load categories');
     }
   };
@@ -56,22 +54,28 @@ const Categories = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/categories', form);
-      console.log('POST /categories response:', response.data);
-
-      setSuccess(response.data.message || 'Category created successfully');
-      setForm({
-        name: '',
-        slug: '',
-        description: '',
-      });
-
-      await fetchCategories();
+      await api.post('/categories', form);
+      setSuccess('Category created successfully');
+      setForm({ name: '', slug: '', description: '' });
+      fetchCategories();
     } catch (err) {
-      console.error('Create category error:', err);
       setError(err.response?.data?.message || 'Failed to create category');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm('Are you sure you want to delete this category?');
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/categories/${id}`);
+      setCategories((prev) =>
+        prev.filter((category) => category.category_id !== id)
+      );
+    } catch (err) {
+      setError('Failed to delete category');
     }
   };
 
@@ -141,6 +145,7 @@ const Categories = () => {
                   <TableCell><strong>Name</strong></TableCell>
                   <TableCell><strong>Slug</strong></TableCell>
                   <TableCell><strong>Description</strong></TableCell>
+                  <TableCell><strong>Actions</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -151,11 +156,21 @@ const Categories = () => {
                       <TableCell>{category.name}</TableCell>
                       <TableCell>{category.slug}</TableCell>
                       <TableCell>{category.description}</TableCell>
+                      <TableCell>
+                        <Button
+                          color="error"
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleDelete(category.category_id)}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4}>No categories found.</TableCell>
+                    <TableCell colSpan={5}>No categories found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

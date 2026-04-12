@@ -10,22 +10,52 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const stats = [
-  { title: 'Total Posts', value: '24', subtitle: 'Published and draft content' },
-  { title: 'Categories', value: '8', subtitle: 'Organized learning topics' },
-  { title: 'Tags', value: '15', subtitle: 'Search and grouping labels' },
-  { title: 'Comments', value: '42', subtitle: 'Community engagement' },
-];
+import { useEffect, useState } from 'react';
+import api from '../api/axios';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  const [stats, setStats] = useState({
+    posts: 0,
+    categories: 0,
+    tags: 0,
+    comments: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  const canManageContent = ['admin', 'editor'].includes(user?.role);
+  const canModerateComments = ['admin', 'editor'].includes(user?.role);
+  const canManageMedia = ['admin', 'editor'].includes(user?.role);
+
+  const fetchStats = async () => {
+    try {
+      const res = await api.get('/dashboard/stats');
+      setStats(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   const displayName =
     user?.first_name && user?.last_name
       ? `${user.first_name} ${user.last_name}`
       : user?.first_name || user?.username || 'User';
+
+  const statCards = [
+    { title: 'Total Posts', value: stats.posts, subtitle: 'Published and draft content' },
+    { title: 'Categories', value: stats.categories, subtitle: 'Organized learning topics' },
+    { title: 'Tags', value: stats.tags, subtitle: 'Search and grouping labels' },
+    { title: 'Comments', value: stats.comments, subtitle: 'Community engagement' },
+  ];
 
   return (
     <Box>
@@ -42,43 +72,45 @@ const Dashboard = () => {
         <Typography variant="h4" fontWeight={800} gutterBottom>
           Welcome back, {displayName}
         </Typography>
-        <Typography variant="body1" sx={{ maxWidth: 800, opacity: 0.95, mb: 3 }}>
-          This is your EduCMS control center. From here you can manage educational
-          content, structure topics, moderate user interactions, and keep your
-          platform organized.
+
+        <Typography variant="body1" sx={{ mb: 3, opacity: 0.95 }}>
+          This is your EduCMS control center.
         </Typography>
 
         <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-          <Button
-            variant="contained"
-            sx={{
-              bgcolor: '#fff',
-              color: '#1d4ed8',
-              fontWeight: 700,
-              '&:hover': { bgcolor: '#eef2ff' },
-            }}
-            onClick={() => navigate('/posts')}
-          >
-            Create New Post
-          </Button>
+          {canManageContent && (
+            <Button
+              variant="contained"
+              sx={{ bgcolor: '#fff', color: '#1d4ed8' }}
+              onClick={() => navigate('/posts')}
+            >
+              Create New Post
+            </Button>
+          )}
+
+          {canManageContent && (
+            <Button
+              variant="outlined"
+              sx={{ borderColor: '#fff', color: '#fff' }}
+              onClick={() => navigate('/categories')}
+            >
+              Manage Categories
+            </Button>
+          )}
 
           <Button
             variant="outlined"
-            sx={{
-              borderColor: '#fff',
-              color: '#fff',
-              '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' },
-            }}
-            onClick={() => navigate('/categories')}
+            sx={{ borderColor: '#fff', color: '#fff' }}
+            onClick={fetchStats}
           >
-            Manage Categories
+            Refresh
           </Button>
         </Stack>
       </Paper>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((item) => (
-          <Grid xs={12} sm={6} lg={3} key={item.title}>
+        {statCards.map((item) => (
+          <Grid item xs={12} sm={6} lg={3} key={item.title}>
             <Card
               sx={{
                 borderRadius: 4,
@@ -86,12 +118,12 @@ const Dashboard = () => {
                 border: '1px solid #eef2f7',
               }}
             >
-              <CardContent sx={{ p: 3 }}>
+              <CardContent>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   {item.title}
                 </Typography>
                 <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
-                  {item.value}
+                  {loading ? '...' : item.value}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {item.subtitle}
@@ -103,67 +135,54 @@ const Dashboard = () => {
       </Grid>
 
       <Grid container spacing={3}>
-        <Grid xs={12} lg={8}>
+        <Grid item xs={12} lg={8}>
           <Paper
             sx={{
               p: 3,
               borderRadius: 4,
               boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
               border: '1px solid #eef2f7',
-              mb: 3,
             }}
           >
-            <Typography variant="h6" fontWeight={800} gutterBottom>
+            <Typography variant="h6" fontWeight={800}>
               Quick Actions
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Use these shortcuts to keep building and managing your content quickly.
-            </Typography>
 
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-              <Button variant="contained" onClick={() => navigate('/categories')}>
-                Add Category
-              </Button>
-              <Button variant="outlined" onClick={() => navigate('/tags')}>
-                Add Tag
-              </Button>
-              <Button variant="outlined" onClick={() => navigate('/posts')}>
-                Manage Posts
-              </Button>
-              <Button variant="outlined" onClick={() => navigate('/comments')}>
-                Moderate Comments
-              </Button>
-              <Button variant="outlined" onClick={() => navigate('/media')}>
-                Media Library
-              </Button>
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }} flexWrap="wrap" useFlexGap>
+              {canManageContent && (
+                <Button variant="contained" onClick={() => navigate('/categories')}>
+                  Add Category
+                </Button>
+              )}
+
+              {canManageContent && (
+                <Button variant="outlined" onClick={() => navigate('/tags')}>
+                  Add Tag
+                </Button>
+              )}
+
+              {canManageContent && (
+                <Button variant="outlined" onClick={() => navigate('/posts')}>
+                  Manage Posts
+                </Button>
+              )}
+
+              {canModerateComments && (
+                <Button variant="outlined" onClick={() => navigate('/comments')}>
+                  Comments
+                </Button>
+              )}
+
+              {canManageMedia && (
+                <Button variant="outlined" onClick={() => navigate('/media')}>
+                  Media
+                </Button>
+              )}
             </Stack>
-          </Paper>
-
-          <Paper
-            sx={{
-              p: 3,
-              borderRadius: 4,
-              boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
-              border: '1px solid #eef2f7',
-            }}
-          >
-            <Typography variant="h6" fontWeight={800} gutterBottom>
-              Recent Activity
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              This area can later show the latest posts, edits, comments, and uploads.
-            </Typography>
-
-            <Box sx={{ py: 1 }}>
-              <Typography variant="body2">• New category added</Typography>
-              <Typography variant="body2">• Post published successfully</Typography>
-              <Typography variant="body2">• Comment awaiting moderation</Typography>
-              <Typography variant="body2">• Media uploaded to library</Typography>
-            </Box>
           </Paper>
         </Grid>
 
-        <Grid xs={12} lg={4}>
+        <Grid item xs={12} lg={4}>
           <Paper
             sx={{
               p: 3,
@@ -173,51 +192,16 @@ const Dashboard = () => {
             }}
           >
             <Typography variant="h6" fontWeight={800} gutterBottom>
-              Account Overview
+              Account
             </Typography>
 
-            <Box
-              sx={{
-                mt: 2,
-                p: 2.5,
-                borderRadius: 3,
-                bgcolor: '#f8fafc',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Name
-                  </Typography>
-                  <Typography variant="body1" fontWeight={700}>
-                    {displayName}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Email
-                  </Typography>
-                  <Typography variant="body1" fontWeight={700}>
-                    {user?.email || 'No email'}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Role
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    fontWeight={700}
-                    sx={{ textTransform: 'capitalize' }}
-                  >
-                    {user?.role || 'User'}
-                  </Typography>
-                </Box>
-              </Stack>
-            </Box>
+            <Stack spacing={1.5}>
+              <Typography><strong>Name:</strong> {displayName}</Typography>
+              <Typography><strong>Email:</strong> {user?.email || 'No email'}</Typography>
+              <Typography sx={{ textTransform: 'capitalize' }}>
+                <strong>Role:</strong> {user?.role || 'User'}
+              </Typography>
+            </Stack>
           </Paper>
         </Grid>
       </Grid>
